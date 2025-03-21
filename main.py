@@ -1,5 +1,5 @@
 # main.py
-from automacao import iniciar_navegador, fazer_login, acessar_matricula_transporte, pesquisar_aluno
+from automacao import iniciar_navegador, fazer_login, acessar_matricula_transporte, pesquisar_aluno, cadastrar_aluno
 from dados import ler_csv
 import time
 
@@ -18,7 +18,7 @@ def main():
                 continue
 
             if not pesquisar_aluno(driver, nome):
-                print(f"🔧 Aluno {nome} precisa ser cadastrado... (função em construção)")
+                cadastrar_aluno(driver, aluno)
 
     finally:
         time.sleep(5)
