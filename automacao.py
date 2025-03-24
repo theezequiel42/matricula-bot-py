@@ -97,20 +97,6 @@ def cadastrar_aluno(driver, aluno):
     try:
         print(f"\n📝 Iniciando cadastro de {nome_completo}...")
 
-        # 1️⃣ Tentativa com PyAutoGUI (posição aproximada do primeiro nome da lista)
-        try:
-            print("🖱️ Tentando selecionar com PyAutoGUI (posição fixa)...")
-            pyautogui.moveTo(786, 568)  # 💡 Ajuste conforme sua tela
-            pyautogui.click()
-            time.sleep(1)
-
-            wait.until(EC.element_to_be_clickable((By.ID, "ext-gen1323")))
-            print("✅ Aluno aparentemente selecionado com PyAutoGUI!")
-            selecionado = True
-    
-        except Exception as e:
-            print(f"⚠️ PyAutoGUI não funcionou: {e}")
-
         # 2️⃣ Tentativas com Selenium (exato, parcial, fallback)
         if not selecionado:
             tentativas = [
@@ -164,7 +150,7 @@ def cadastrar_aluno(driver, aluno):
                 time.sleep(1)
 
         # 5️⃣ Preenche o formulário com PyAutoGUI
-        preencher_com_tab(aluno)
+        preencher_com_tab(aluno, driver)
 
     except Exception as e:
         print(f"❌ Erro ao iniciar cadastro de {nome_completo}: {e}")
@@ -184,7 +170,7 @@ def preencher_formulario(driver, aluno):
         print("📌 Entrou na função preencher_formulario()")
         print("⏳ Aguardando modal do formulário...")
 
-        modal = wait.until(EC.presence_of_element_located((
+        modal = wait.until(EC.presence_of_element_located((                         
             By.XPATH, "//div[contains(@class,'x-window') and contains(@role, 'dialog')]"
         )))
         wait.until(EC.visibility_of(modal))
@@ -298,8 +284,9 @@ def preencher_formulario(driver, aluno):
 pyautogui.PAUSE = 0.5
 pyautogui.FAILSAFE = True
 
-def preencher_com_tab(aluno):
+def preencher_com_tab(aluno, driver):
     print(f"📌 Iniciando preenchimento via PyAutoGUI para {aluno['NOME']}")
+    wait = WebDriverWait(driver, 10)
 
     time.sleep(1)  # Aguarda o formulário carregar
 
@@ -357,34 +344,56 @@ def preencher_com_tab(aluno):
     print("📏 Preenchendo PARADA: 5")
     pyautogui.write("5")
     time.sleep(2)
+    
     # 🔍 Abrir modal clicando na lupa
     print("🔍 Clicando na lupa para abrir modal...")
     pyautogui.moveTo(808, 600)  # <- Posição da lupa
     pyautogui.click()
     print("⏳ Aguardando modal abrir...")
     time.sleep(4)  # Aumentar se necessário
+    
+    # Seleciona "E.E.B. GONÇALVES DIAS" usando Selenium
+    print("🎯 Localizando 'E.E.B. GONÇALVES DIAS' dentro do modal...")
+    escola_xpath = "//div[contains(text(),'E.E.B. GONÇALVES DIAS')]"
+    escola_elemento = wait.until(EC.element_to_be_clickable((By.XPATH, escola_xpath)))
+
+    driver.execute_script("arguments[0].scrollIntoView();", escola_elemento)
+    ActionChains(driver).move_to_element(escola_elemento).pause(0.2).click().perform()
+    print("✅ Escola selecionada!")
 
     # ✅ Clicar em 'Selecionar'
-    print("✅ Clicando no botão 'Selecionar' do modal...")
-    pyautogui.moveTo(1178, 942)  # Posição do botão
-    pyautogui.click()
+    print("🖱️ Clicando no botão 'Selecionar'...")
+    selecionar_xpath = "//div[contains(@class, 'x7-text-el') and text()='Selecionar']"
+    selecionar_botao = wait.until(EC.element_to_be_clickable((By.XPATH, selecionar_xpath)))
+    ActionChains(driver).move_to_element(selecionar_botao).pause(0.2).click().perform()
+    print("✅ Botão 'Selecionar' clicado!")
     time.sleep(4)
 
     # 7️⃣ Distância
-    pyautogui.moveTo(730, 800)
-    pyautogui.click()
-    time.sleep(2)
-    print("📏 Preenchendo distância: 5")
-    pyautogui.write("5")
-    time.sleep(1)
-    pyautogui.press('tab')
-    pyautogui.press('tab')
-    pyautogui.press('tab')
-    pyautogui.press('enter')
-    pyautogui.press('tab')
-    pyautogui.press('tab')
-    pyautogui.press('tab')
-    time.sleep(1)
+    print("📏 Localizando campo de distância com Selenium...")
+
+    try:
+        campo_distancia = wait.until(
+            EC.element_to_be_clickable((By.XPATH, "//input[@name='txtDistanciaEscolaMatriculaTransporte' and @maxlength='5']"))
+        )
+        driver.execute_script("arguments[0].scrollIntoView();", campo_distancia)
+        ActionChains(driver).move_to_element(campo_distancia).pause(0.2).click().perform()
+
+        campo_distancia.clear()
+        campo_distancia.send_keys("5")
+        print("✅ Distância preenchida com sucesso!")
+        time.sleep(1)
+        pyautogui.press('tab')
+        pyautogui.press('tab')
+        pyautogui.press('tab')
+        pyautogui.press('enter')
+        pyautogui.press('tab')
+        pyautogui.press('tab')
+        pyautogui.press('tab')
+        time.sleep(1)
+    
+    except Exception as e:
+        print(f"❌ Erro ao preencher a distância: {e}")
 
     # 8️⃣ Salvar
     print("💾 Salvando cadastro...")
