@@ -91,46 +91,55 @@ def pesquisar_aluno(driver, nome_aluno):
 # 📝 Inicia o cadastro se o aluno não estiver matriculado
 def cadastrar_aluno(driver, aluno):
     wait = WebDriverWait(driver, 10)
+    nome_completo = aluno['NOME']
+    selecionado = False
 
     try:
-        print(f"\n📝 Iniciando cadastro de {aluno['NOME']}...")
+        print(f"\n📝 Iniciando cadastro de {nome_completo}...")
 
-        nome_completo = aluno['NOME']
-        selecionado = False
+        # 1️⃣ Tentativa com PyAutoGUI (posição aproximada do primeiro nome da lista)
+        try:
+            print("🖱️ Tentando selecionar com PyAutoGUI (posição fixa)...")
+            pyautogui.moveTo(786, 568)  # 💡 Ajuste conforme sua tela
+            pyautogui.click()
+            time.sleep(1)
 
-        # 1️⃣ Tentativas de clique: exato, parcial e fallback
-        tentativas = [
-            f"//div[@class='x-grid-cell-inner' and text()='{nome_completo}']",
-            f"//div[@class='x-grid-cell-inner' and contains(text(), '{nome_completo.split()[0]}')]",
-            "//table[contains(@class, 'x-grid-table')]//tr[contains(@class, 'x-grid-row')]"
-        ]
+            wait.until(EC.element_to_be_clickable((By.ID, "ext-gen1323")))
+            print("✅ Aluno aparentemente selecionado com PyAutoGUI!")
+            selecionado = True
+    
+        except Exception as e:
+            print(f"⚠️ PyAutoGUI não funcionou: {e}")
 
-        for tentativa_xpath in tentativas:
-            try:
-                print(f"🔍 Tentando clicar em: {tentativa_xpath}")
-                elemento = wait.until(EC.element_to_be_clickable((By.XPATH, tentativa_xpath)))
-                driver.execute_script("arguments[0].scrollIntoView();", elemento)
-                ActionChains(driver).move_to_element(elemento).pause(0.2).click().perform()
-                time.sleep(1)
+        # 2️⃣ Tentativas com Selenium (exato, parcial, fallback)
+        if not selecionado:
+            tentativas = [
+                f"//div[@class='x-grid-cell-inner' and text()='{nome_completo}']",
+                f"//div[@class='x-grid-cell-inner' and contains(text(), '{nome_completo.split()[0]}')]",
+                "//table[contains(@class, 'x-grid-table')]//tr[contains(@class, 'x-grid-row')]"
+            ]
 
-                # ✅ Verifica se o botão 'Incluir' está habilitado
+            for xpath in tentativas:
                 try:
+                    print(f"🔍 Tentando clicar com Selenium em: {xpath}")
+                    elemento = wait.until(EC.element_to_be_clickable((By.XPATH, xpath)))
+                    driver.execute_script("arguments[0].scrollIntoView();", elemento)
+                    ActionChains(driver).move_to_element(elemento).pause(0.2).click().perform()
+                    time.sleep(1)
+
                     wait.until(EC.element_to_be_clickable((By.ID, "ext-gen1323")))
-                    print("✅ Aluno realmente selecionado! Botão 'Incluir' habilitado.")
+                    print("✅ Seleção com Selenium funcionou!")
                     selecionado = True
                     break
-                except:
-                    print("⚠️ Botão 'Incluir' não habilitado após o clique.")
+                except Exception as e:
+                    print(f"⚠️ Tentativa com Selenium falhou: {e}")
 
-            except Exception as e:
-                print(f"⚠️ Falha na tentativa: {e}")
-
-        # ❌ Se não selecionou, aborta
+        # 3️⃣ Se não conseguiu selecionar, aborta
         if not selecionado:
-            print(f"🚫 Não foi possível selecionar {nome_completo}. Pulando para o próximo.")
+            print(f"🚫 Não foi possível selecionar {nome_completo}. Pulando...")
             return
 
-        # 2️⃣ Clica no botão "Incluir" com verificação de modal
+        # 4️⃣ Clica no botão 'Incluir' e verifica se o modal abriu
         print("🧩 Tentando clicar no botão 'Incluir'...")
 
         for tentativa in range(2):
@@ -138,10 +147,10 @@ def cadastrar_aluno(driver, aluno):
                 botao_incluir = wait.until(EC.element_to_be_clickable((By.ID, "ext-gen1323")))
                 driver.execute_script("arguments[0].scrollIntoView();", botao_incluir)
                 ActionChains(driver).move_to_element(botao_incluir).pause(0.2).click().perform()
-                print(f"✅ Clique no botão 'Incluir' (tentativa {tentativa + 1})")
+                print(f"✅ Botão 'Incluir' clicado (tentativa {tentativa + 1})")
                 time.sleep(2)
 
-                # 3️⃣ Confirma se o formulário/modal apareceu
+                # Verifica se o formulário/modal foi realmente aberto
                 modal_xpath = "//div[contains(@class,'x-window') and contains(@role, 'dialog')]"
                 wait.until(EC.presence_of_element_located((By.XPATH, modal_xpath)))
                 print("✅ Modal de matrícula detectado. Continuando...")
@@ -152,14 +161,13 @@ def cadastrar_aluno(driver, aluno):
                 if tentativa == 1:
                     print("🚫 Não foi possível abrir o formulário. Pulando este aluno.")
                     return
-                else:
-                    time.sleep(1)
+                time.sleep(1)
 
-        # 3️⃣ Preenche o formulário com PyAutoGUI
+        # 5️⃣ Preenche o formulário com PyAutoGUI
         preencher_com_tab(aluno)
 
     except Exception as e:
-        print(f"❌ Erro ao iniciar cadastro de {aluno['NOME']}: {e}")
+        print(f"❌ Erro ao iniciar cadastro de {nome_completo}: {e}")
 
 # 📋 Preenche o formulário de cadastro do aluno
 def preencher_formulario(driver, aluno):
