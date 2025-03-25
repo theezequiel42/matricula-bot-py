@@ -8,7 +8,9 @@ The automation system handles the complete workflow from logging into the Educar
 ```
 .
 ├── automacao.py     # Core automation logic including web interactions and form filling
+├── config.py        # Configuration settings for the automation
 ├── dados.py         # Data handling functions for CSV processing
+├── iniciar.bat      # Windows batch script to start the application
 ├── main.py         # Application entry point and workflow orchestration
 ├── position.py     # Utility script for capturing mouse coordinates
 └── requirements.txt # Project dependencies
@@ -62,6 +64,8 @@ SENHA=your_password
 1. Prepare your student data in a CSV file with the following columns:
    - NOME (Name)
    - TURNO (Shift)
+   - LINHA (Route)
+   - ANO (Grade)
    Place this file in the `data/` directory as `alunos.csv`
 
 2. Run the automation:
