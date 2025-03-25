@@ -2,6 +2,7 @@
 
 import os
 import time
+from config import UNIDADE_ESCOLAR, MODALIDADE, DISTANCIA_PADRAO, ESCOLA_MODAL_XPATH, PARADA_PADRAO
 from dotenv import load_dotenv
 from selenium import webdriver
 from selenium.webdriver.common.by import By
@@ -154,133 +155,7 @@ def cadastrar_aluno(driver, aluno):
 
     except Exception as e:
         print(f"❌ Erro ao iniciar cadastro de {nome_completo}: {e}")
-
-# 📋 Preenche o formulário de cadastro do aluno
-def preencher_formulario(driver, aluno):
-    wait = WebDriverWait(driver, 10)
-
-    turnos_map = {
-        "MATUTINO": "Manhã",
-        "VESPERTINO": "Tarde",
-        "NOTURNO": "Noite",
-        "INTEGRAL": "Integral"
-    }
-
-    try:
-        print("📌 Entrou na função preencher_formulario()")
-        print("⏳ Aguardando modal do formulário...")
-
-        modal = wait.until(EC.presence_of_element_located((                         
-            By.XPATH, "//div[contains(@class,'x-window') and contains(@role, 'dialog')]"
-        )))
-        wait.until(EC.visibility_of(modal))
-        print("✅ Modal do formulário carregado!")
-
-        # 1️⃣ Selecionar Turno
-        print("🔍 Buscando dropdown de turno...")
-        dropdown_turno = wait.until(EC.element_to_be_clickable((
-            By.XPATH, "//div[contains(@class, 'x-form-arrow-trigger') and @role='button']"
-        )))
-        dropdown_turno.click()
-        time.sleep(1)
-
-        turno_normalizado = aluno["TURNO"].upper()
-        turno_label = turnos_map.get(turno_normalizado, "Integral")
-
-        print(f"⌛ Buscando opção do turno: {turno_label}")
-        opcao_turno = wait.until(EC.presence_of_element_located((
-            By.XPATH, f"//li[contains(text(),'{turno_label}')]"
-        )))
-        driver.execute_script("arguments[0].scrollIntoView(true);", opcao_turno)
-        wait.until(EC.element_to_be_clickable((
-            By.XPATH, f"//li[contains(text(),'{turno_label}')]"
-        )))
-        driver.execute_script("arguments[0].click();", opcao_turno)
-        print(f"✅ Turno '{turno_label}' selecionado com JS!")
-
-        # 2️⃣ Selecionar Unidade Escolar
-        print("🔍 Fechando dropdown anterior clicando no botão da unidade...")
-        dropdown_unidade_botao = wait.until(EC.element_to_be_clickable((By.ID, "ext-gen1811")))
-        driver.execute_script("arguments[0].click();", dropdown_unidade_botao)
-        time.sleep(1)
-
-        print("🔍 Aguardando lista de unidades aparecer...")
-        lista_unidade = wait.until(EC.presence_of_element_located((
-            By.XPATH, "//li[contains(text(),'EEB GONÇALVES DIAS')]"
-        )))
-        driver.execute_script("arguments[0].scrollIntoView(true);", lista_unidade)
-        time.sleep(0.5)
-        driver.execute_script("arguments[0].click();", lista_unidade)
-        print("✅ Unidade selecionada!")
-
-        # 3️⃣ Modalidade
-        print("🔍 Selecionando modalidade...")
-        dropdown_modalidade = wait.until(EC.element_to_be_clickable((By.ID, "ext-gen1801")))
-        dropdown_modalidade.click()
-        time.sleep(1)
-
-        modalidade_opcao = wait.until(EC.element_to_be_clickable(
-            (By.XPATH, "//li[contains(text(),'MÉDIO')]")
-        ))
-        modalidade_opcao.click()
-        print("✅ Modalidade selecionada!")
-
-        # 4️⃣ Série
-        print(f"🔍 Selecionando série: {aluno['ANO']} ANO")
-        dropdown_serie = wait.until(EC.element_to_be_clickable((By.ID, "ext-gen1810")))
-        dropdown_serie.click()
-        time.sleep(1)
-
-        serie_ano = str(aluno["ANO"]).strip()
-        serie_opcao = wait.until(EC.element_to_be_clickable(
-            (By.XPATH, f"//li[contains(text(),'{serie_ano} ANO')]")
-        ))
-        serie_opcao.click()
-        print(f"✅ Série {serie_ano} ANO selecionada!")
-
-        # 5️⃣ Trajeto
-        print("🔍 Selecionando trajeto...")
-        dropdown_trajeto = wait.until(EC.element_to_be_clickable((By.ID, "ext-gen1814")))
-        dropdown_trajeto.click()
-        time.sleep(1)
-
-        turno_tag = {
-            "MATUTINO": ["(M)", "(M/V)"],
-            "VESPERTINO": ["(V)", "(M/V)"],
-            "NOTURNO": ["(N)"],
-            "INTEGRAL": ["(M)", "(V)", "(M/V)"]
-        }.get(turno_normalizado, ["(M)", "(V)", "(M/V)"])
-
-        for tag in turno_tag:
-            try:
-                trajeto_opcao = wait.until(EC.element_to_be_clickable((
-                    By.XPATH,
-                    f"//li[contains(text(),'{aluno['LOCALIDADE']}') and contains(text(),'{tag}')]"
-                )))
-                trajeto_opcao.click()
-                print(f"✅ Trajeto com tag '{tag}' selecionado!")
-                break
-            except:
-                continue
-        else:
-            print("⚠️ Nenhum trajeto encontrado para a localidade/turno. Pulando trajeto.")
-
-        # 6️⃣ Distância
-        print("🔍 Preenchendo distância...")
-        campo_distancia = wait.until(EC.presence_of_element_located((By.ID, "ext-gen1863")))
-        campo_distancia.clear()
-        campo_distancia.send_keys("5")
-        print("✅ Distância preenchida!")
-
-        # 7️⃣ Salvar
-        print("🔍 Clicando em salvar...")
-        botao_salvar = wait.until(EC.element_to_be_clickable((By.XPATH, "//span[text()='Salvar']")))
-        driver.execute_script("arguments[0].click();", botao_salvar)
-        print(f"✅ Matrícula de {aluno['NOME']} salva com sucesso!")
-
-    except Exception as e:
-        print(f"❌ Erro ao preencher o formulário para {aluno['NOME']}: {e}")
-        
+      
 pyautogui.PAUSE = 0.5
 pyautogui.FAILSAFE = True
 
@@ -312,16 +187,16 @@ def preencher_com_tab(aluno, driver):
     time.sleep(1)
 
     # 3️⃣ Unidade
-    print("🏫 Selecionando unidade: EEB GONÇALVES DIAS")
-    pyautogui.write("EEB G")
+    print("🏫 Selecionando unidade")
+    pyautogui.write(UNIDADE_ESCOLAR)
     time.sleep(1)
     pyautogui.press('down')
     pyautogui.press('enter')
     time.sleep(1)
 
     # 4️⃣ Modalidade
-    print("🎓 Selecionando modalidade: MÉDIO")
-    pyautogui.write("M")
+    print("🎓 Selecionando modalidade")
+    pyautogui.write(MODALIDADE)
     time.sleep(1)
     pyautogui.press('enter')
     time.sleep(1)
@@ -341,8 +216,8 @@ def preencher_com_tab(aluno, driver):
     time.sleep(1)
     pyautogui.press('tab')
     time.sleep(1)
-    print("📏 Preenchendo PARADA: 5")
-    pyautogui.write("5")
+    print("📏 Preenchendo PARADA")
+    pyautogui.write(PARADA_PADRAO)
     time.sleep(2)
     
     # 🔍 Abrir modal clicando na lupa
@@ -352,9 +227,9 @@ def preencher_com_tab(aluno, driver):
     print("⏳ Aguardando modal abrir...")
     time.sleep(4)  # Aumentar se necessário
     
-    # Seleciona "E.E.B. GONÇALVES DIAS" usando Selenium
-    print("🎯 Localizando 'E.E.B. GONÇALVES DIAS' dentro do modal...")
-    escola_xpath = "//div[contains(text(),'E.E.B. GONÇALVES DIAS')]"
+    # Seleciona "escola" usando Selenium
+    print("🎯 Localizando 'escola' dentro do modal...")
+    escola_xpath = ESCOLA_MODAL_XPATH
     escola_elemento = wait.until(EC.element_to_be_clickable((By.XPATH, escola_xpath)))
 
     driver.execute_script("arguments[0].scrollIntoView();", escola_elemento)
@@ -380,7 +255,7 @@ def preencher_com_tab(aluno, driver):
         ActionChains(driver).move_to_element(campo_distancia).pause(0.2).click().perform()
 
         campo_distancia.clear()
-        campo_distancia.send_keys("5")
+        campo_distancia.send_keys(DISTANCIA_PADRAO)
         print("✅ Distância preenchida com sucesso!")
         time.sleep(1)
         pyautogui.press('tab')
